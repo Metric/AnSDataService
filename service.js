@@ -8,7 +8,6 @@ const app = Express();
 
 const FULL_IP_TIMES = {};
 const DIFF_IP_TIMES = {};
-const MAX_IP_WAIT = 60 * 60 * 1000;
 
 app.use(Compression());
 
@@ -20,14 +19,6 @@ app.get('/full/:region(US)/connected/:id([0-9\\-]{1,})', (req, res) => {
         return;
     }
 
-    if (FULL_IP_TIMES[ip]) {
-        const lastTime = FULL_IP_TIMES[ip];
-        if (Date.now() - lastTime < MAX_IP_WAIT) {
-            res.status(403).end();
-            return;
-        }
-    }
-
     try {
         const region = req.params.region;
 
@@ -36,9 +27,25 @@ app.get('/full/:region(US)/connected/:id([0-9\\-]{1,})', (req, res) => {
             return;
         }
 
-        const id = parseInt(req.params.id)
+        let id = parseInt(req.params.id)
+
+        if (id < 0) {
+            id = -1;
+        }
+
         if (FileHandler.exists(region, id)) {
-            FULL_IP_TIMES[ip] = Date.now();
+            const lastModified = FileHandler.modified(region, id);
+            const ipkey = region+'.'+ip+'.'+id;
+    
+            if (FULL_IP_TIMES[ipkey]) {
+                const lastTime = FULL_IP_TIMES[ipkey];
+                if (Math.floor(lastTime) == Math.floor(lastModified)) {
+                    res.status(403).end();
+                    return;
+                }
+            }
+
+            FULL_IP_TIMES[ipkey] = lastModified;
             res.status(200).send(FileHandler.get(region, id)).end();
         }
         else {
@@ -83,14 +90,6 @@ app.get('/diff/:region(US)/connected/:id([0-9\\-]{1,})/v/:version([0-9]{1,2})', 
         return;
     }
 
-    if (DIFF_IP_TIMES[ip]) {
-        const lastTime = DIFF_IP_TIMES[ip];
-        if (Date.now() - lastTime < MAX_IP_WAIT) {
-            res.status(403).end();
-            return;
-        }
-    }
-
     try {
         const region = req.params.region;
 
@@ -99,10 +98,31 @@ app.get('/diff/:region(US)/connected/:id([0-9\\-]{1,})/v/:version([0-9]{1,2})', 
             return;
         }
 
-        const id = parseInt(req.params.id)
+        let id = parseInt(req.params.id)
         const version = parseInt(req.params.version);
+
+        if (version < 0 || version > 23) {
+            res.status(404).end();
+            return;
+        }
+
+        if (id < 0) {
+            id = -1;
+        }
+
         if (FileHandler.exists(region, id, version)) {
-            DIFF_IP_TIMES[ip] = Date.now();
+            const lastModified = FileHandler.modified(region, id, version);
+            const ipkey = region+'.'+ip+'.'+id+'.'+version;
+    
+            if (DIFF_IP_TIMES[ipkey]) {
+                const lastTime = DIFF_IP_TIMES[ipkey];
+                if (Math.floor(lastTime) == Math.floor(lastModified)) {
+                    res.status(403).end();
+                    return;
+                }
+            }
+
+            DIFF_IP_TIMES[ipkey] = lastModified;
             res.status(200).send(FileHandler.get(region, id, version)).end();
         }
         else {
