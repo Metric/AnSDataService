@@ -11,7 +11,31 @@ const DIFF_IP_TIMES = {};
 
 app.use(Compression());
 
-app.get('/full/:region(US)/connected/:id([0-9\\-]{1,})', (req, res) => {
+app.get('/connected/:region(US|EU)', (req, res) => {
+    try {
+        const region = req.params.region;
+
+        if (region.toUpperCase() !== 'US'
+        && region.toUpperCase() !== 'EU') {
+            res.status(404).end();
+            return;
+        }
+
+        const f = FileHandler.connected(region);
+        if (!f) {
+            res.status(404).end();
+            return;
+        }
+
+        res.status(200).send(f).end();
+    }
+    catch (e) {
+        console.log(e);
+        res.status(500).end();
+    }
+});
+
+app.get('/full/:region(US|EU)/connected/:id([0-9\\-]{1,})', (req, res) => {
     const ip = req.ip;
     
     if (!ip) {
@@ -22,7 +46,8 @@ app.get('/full/:region(US)/connected/:id([0-9\\-]{1,})', (req, res) => {
     try {
         const region = req.params.region;
 
-        if (region.toUpperCase() !== 'US') {
+        if (region.toUpperCase() !== 'US'
+        && region.toUpperCase() !== 'EU') {
             res.status(404).end();
             return;
         }
@@ -58,11 +83,12 @@ app.get('/full/:region(US)/connected/:id([0-9\\-]{1,})', (req, res) => {
     }
 });
 
-app.get('/full/:region(US)/connected/:id([0-9\\-]{1,})/modified', (req, res) => {
+app.get('/full/:region(US|EU)/connected/:id([0-9\\-]{1,})/modified', (req, res) => {
     try {
         const region = req.params.region;
 
-        if (region.toUpperCase() !== 'US') {
+        if (region.toUpperCase() !== 'US'
+        && region.toUpperCase() !== 'EU') {
             res.status(404).end();
             return;
         }
@@ -82,7 +108,7 @@ app.get('/full/:region(US)/connected/:id([0-9\\-]{1,})/modified', (req, res) => 
 });
 
 
-app.get('/diff/:region(US)/connected/:id([0-9\\-]{1,})/v/:version([0-9]{1,2})', (req, res) => {
+/* app.get('/diff/:region(US|KR|TW|CH|EU)/connected/:id([0-9\\-]{1,})/v/:version([0-9]{1,2})', (req, res) => {
     const ip = req.ip;
 
     if (!ip) {
@@ -93,7 +119,8 @@ app.get('/diff/:region(US)/connected/:id([0-9\\-]{1,})/v/:version([0-9]{1,2})', 
     try {
         const region = req.params.region;
 
-        if (region.toUpperCase() !== 'US') {
+        if (region.toUpperCase() !== 'US'
+        && region.toUpperCase() !== 'EU') {
             res.status(404).end();
             return;
         }
@@ -135,11 +162,12 @@ app.get('/diff/:region(US)/connected/:id([0-9\\-]{1,})/v/:version([0-9]{1,2})', 
     }
 });
 
-app.get('/diff/:region(US)/connected/:id([0-9\\-]{1,})/v/:version([0-9]{1,2})/modified', (req, res) => {
+app.get('/diff/:region(US|EU)/connected/:id([0-9\\-]{1,})/v/:version([0-9]{1,2})/modified', (req, res) => {
     try {
         const region = req.params.region;
 
-        if (region.toUpperCase() !== 'US') {
+        if (region.toUpperCase() !== 'US'
+        && region.toUpperCase() !== 'EU') {
             res.status(404).end();
             return;
         }
@@ -157,6 +185,6 @@ app.get('/diff/:region(US)/connected/:id([0-9\\-]{1,})/v/:version([0-9]{1,2})/mo
         console.log(e);
         res.status(500).end();
     }
-});
+}); */
 
 app.listen(3000);

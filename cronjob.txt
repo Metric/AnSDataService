@@ -1,0 +1,2 @@
+0 * * * * cd /root/Service && /root/.nvm/versions/node/v13.11.0/bin/node auctions.js US > log-us.txt 2>&1
+10 * * * * cd /root/Service && /root/.nvm/versions/node/v13.11.0/bin/node auctions.js EU > log-eu.txt 2>&1

@@ -1,23 +1,23 @@
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
-const childprocess = require('child_process').execSync;
+//const childprocess = require('child_process').execSync;
 
 const Auth = require('./blizzard/auth');
 const RealmHandler = require('./realm.handler');
-const USRegion = require('./realms/US');
 const Realms = require('./realms');
-
+const fs = require('fs');
+const path = require('path');
 const KVDB = require('./KVDB');
+const statistics = require('./utils/statistics');
+const Utils = require('./utils');
 
 const getDB = (key) => {
     const fpath = path.join(__dirname, 'data');
     const db = new KVDB(fpath, key);
-    db.load();
     return db;
 };
 
+/*
 const renameOldDB = (db) => {
     const fpath = path.join(db.path, db.name + '.kvdb');
     const npath = path.join(db.path, db.name + '.kvdb.old');
@@ -91,17 +91,25 @@ const processRegion = (db, tracker) => {
         source[5] = seen;
         db.set(k, source);
     }
-} 
+}*/
 
-const processUS = async () => {
-    let regionTracker = {};
+const getRegionData = async (region, token) => {
+    const p = path.join(__dirname, "realms", `${region.toLowerCase()}-connected.json`);
+    if (fs.existsSync(p)) {
+        return JSON.parse(fs.readFileSync(p).toString("utf8"));
+    }
 
-    const auth = new Auth('US');
-    const realms = new Realms(USRegion).connected;
+    return await Realms.getLive(region, token);
+};
 
+const processRegion = async (region) => {
+    let totalTime = Date.now();
+    //let regionTracker = {};
+    const auth = new Auth(region.toUpperCase());
     await auth.clientCred();
 
-    let regionDB = getDB('US');
+    const ledger = {};
+    const realms = new Realms(await getRegionData(region, auth.token)).connected;
 
     let i = 0;
     while (i < realms.length) {
@@ -111,22 +119,34 @@ const processUS = async () => {
             'index': r.id,
             'url': r.auctions.href,
             'token': auth.token,
-            'region': 'US'
-        }, regionTracker);
-
+            'region': region.toUpperCase(),
+            'ledger': ledger
+        });
         ++i;
     }
 
-    processRegion(regionDB, regionTracker);
-    regionTracker = {};
-    renameOldDB(regionDB);
-    regionDB.flush();
-    regionDB.close();
-    createDiff(regionDB);
+    if (ledger) {
+        const rdb = getDB(region.toUpperCase());
+
+        let time = Date.now();
+        console.log('updating region db');
+        for (let k in ledger) {
+            const track = ledger[k];
+            const v = Utils.uint32Bytes(statistics.averageValues(track));
+            const m = Utils.uint32Bytes(statistics.min(track));
+            rdb.set(k, m+v);
+        }
+
+        rdb.flush();
+        rdb.close();
+        console.log(`region db complete ${(Date.now() - time) / 1000}s`);
+    }
+
+    console.log(`total time ${(Date.now() - totalTime) / 1000 / 60}m`);
 }
 
-const processRegions = async () => {
-    await processUS();
+const start = async () => {
+    await processRegion(process.argv[2]);
 };
 
-processRegions();
+start();

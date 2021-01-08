@@ -1,6 +1,9 @@
 'use strict';
 const request = require('request');
+const fs = require('fs');
+const path = require('path');
 const async = require('async');
+const url = "https://{region}.api.blizzard.com/data/wow/connected-realm/index?namespace=dynamic-{region}";
 
 class Realms {
     constructor(json) {
@@ -46,11 +49,12 @@ class Realms {
         });
     }
 
-    static getLive(url,token) {
+    static getLive(region, token) {
+        const regionURL = url.replace(/\{region\}/gi, region.toLowerCase());
         return new Promise((res, rej) => {
             request(
                 {   method: 'GET',
-                    url: `${url}&access_token=${token}`,
+                    url: `${regionURL}&access_token=${token}`,
                     gzip: true
                 }, async (error, response, result) => {
                     if (error) {
@@ -91,6 +95,7 @@ class Realms {
                                 });
                         });
 
+                        fs.writeFileSync(path.join(__dirname, `${region.toLowerCase()}-connected.json`), JSON.stringify(realms, null, 2));
                         res(realms);
                     }
                     catch (e) {

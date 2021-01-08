@@ -65,7 +65,6 @@ class KVDB {
             t = 0;
         }
         else if(typeof v === 'string') {
-            
             if (compress) {
                 v = zlib.deflateSync(v).toString('base64');
             }

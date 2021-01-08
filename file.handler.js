@@ -4,10 +4,26 @@ const fs = require('fs');
 const path = require('path');
 
 const FPath = path.join(__dirname, 'data');
+const RPath = path.join(__dirname, 'realms');
 const FName = "{0}-{1}.kvdb";
 const FNameDiff = "{0}-{1}.kvdb.diff{2}";
 const FNameRegion = "{0}.kvdb";
 const FNameRegionDiff = "{0}.kvdb.diff{1}";
+
+exports.connected = (region) => {
+    if (!region) {
+        return null;
+    }
+
+    region = region.toLowerCase();
+
+    const p = path.join(RPath, `${region}-connected.json`);
+    if (!fs.existsSync(p)) {
+        return null;
+    }
+
+    return fs.readFileSync(p);
+};
 
 exports.modified = (region, index, diff) => {
 
