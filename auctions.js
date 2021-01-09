@@ -14,6 +14,7 @@ const Utils = require('./utils');
 const getDB = (key) => {
     const fpath = path.join(__dirname, 'data');
     const db = new KVDB(fpath, key);
+    db.load();
     return db;
 };
 
