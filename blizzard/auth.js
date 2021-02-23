@@ -25,7 +25,7 @@ class Auth {
                 this.token = null;
                 request(
                     {
-                        method: 'GET',
+                        method: 'POST',
                         url: oauth.replace('{region}', region)
                     }, (err, response, body) => {
 
